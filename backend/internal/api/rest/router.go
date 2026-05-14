@@ -1,15 +1,17 @@
 package rest
 
 import (
-	"database/sql"
-
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/pingan/monitor-backend/internal/repository"
 	"github.com/pingan/monitor-backend/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
-func RegisterRoutes(r *gin.Engine, svc *service.Service, db *sql.DB, rdb *redis.Client) {
-	h := &handler{svc: svc, db: db, rdb: rdb}
+func RegisterRoutes(r *gin.Engine, svc *service.Service, db *sqlx.DB, rdb *redis.Client) {
+	h := &handler{svc: svc, db: db.DB, rdb: rdb}
+	silenceRepo := repository.NewSilenceRepository(db)
+	sh := &silenceHandler{repo: silenceRepo}
 
 	api := r.Group("/api/v1")
 	{
@@ -25,6 +27,13 @@ func RegisterRoutes(r *gin.Engine, svc *service.Service, db *sql.DB, rdb *redis.
 		{
 			alerts.GET("", h.ListAlerts)
 			alerts.POST("/:id/resolve", h.ResolveAlert)
+		}
+
+		silences := api.Group("/silences")
+		{
+			silences.GET("", sh.List)
+			silences.POST("", sh.Create)
+			silences.DELETE("/:id", sh.Delete)
 		}
 
 		api.GET("/health", h.Health)

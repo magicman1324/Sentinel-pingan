@@ -49,7 +49,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
-	rest.RegisterRoutes(router, svc, db.DB, rdb)
+	rest.RegisterRoutes(router, svc, db, rdb)
 
 	httpSrv := &http.Server{
 		Addr:         ":8080",

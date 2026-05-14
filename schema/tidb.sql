@@ -60,6 +60,18 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX idx_created_at (created_at)
 );
 
+-- Alert silences (planned maintenance windows)
+CREATE TABLE IF NOT EXISTS silences (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    matchers   JSON NOT NULL COMMENT '[{"name":"hostname","value":"prod-.*","isRegex":true}]',
+    starts_at  DATETIME NOT NULL,
+    ends_at    DATETIME NOT NULL,
+    comment    TEXT,
+    created_by VARCHAR(128),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_active (starts_at, ends_at)
+);
+
 -- Relation table: rule <-> channel
 CREATE TABLE IF NOT EXISTS rule_channels (
     rule_id    BIGINT NOT NULL,
