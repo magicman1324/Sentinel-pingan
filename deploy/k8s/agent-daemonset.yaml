@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: monitor-agent
+  namespace: monitoring
+  labels:
+    app: monitor-agent
+spec:
+  selector:
+    matchLabels:
+      app: monitor-agent
+  template:
+    metadata:
+      labels:
+        app: monitor-agent
+    spec:
+      hostNetwork: true
+      containers:
+      - name: agent
+        image: pingan/monitor-agent:latest
+        env:
+        - name: KAFKA_BROKERS
+          value: "kafka-cluster:9092"
+        - name: KAFKA_TOPIC
+          value: "metrics"
+        - name: AGENT_INTERVAL
+          value: "15s"
+        resources:
+          requests:
+            cpu: 50m
+            memory: 20Mi
+          limits:
+            cpu: 100m
+            memory: 30Mi
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["SYS_PTRACE"]

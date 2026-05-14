@@ -1,0 +1,4 @@
+github.com/IBM/sarama v1.43.3 h1:Yj6L2IaNPT2wtR7hupHHsazVb2+AJENO0Q2xCr7DJOg=
+github.com/IBM/sarama v1.43.3/go.mod h1:Rjbm7cHPrQm/mVys0ouoE+BiS14/HbHaRLqB9HRULDE=
+github.com/shirou/gopsutil/v4 v4.24.12 h1:qP2pW+IPr9mJjN0ZQf06E8PCvhC4JaBacDb7V5skUP8=
+github.com/shirou/gopsutil/v4 v4.24.12/go.mod h1:4LluvBcN8Y0W9bM4ebfUGbkHpfHAVoP2+5EuMEb0YPY=

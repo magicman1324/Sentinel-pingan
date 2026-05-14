@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-backend
+  namespace: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: monitor-backend
+  template:
+    metadata:
+      labels:
+        app: monitor-backend
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: backend
+        image: pingan/monitor-backend:latest
+        ports:
+        - containerPort: 8080
+          name: rest
+        - containerPort: 9090
+          name: grpc
+        env:
+        - name: TIDB_DSN
+          value: "root:@tcp(tidb:4000)/monitor?parseTime=true"
+        - name: REDIS_ADDR
+          value: "redis:6379"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 5
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitor-backend
+  namespace: monitoring
+spec:
+  selector:
+    app: monitor-backend
+  ports:
+  - name: rest
+    port: 8080
+    targetPort: 8080
+  - name: grpc
+    port: 9090
+    targetPort: 9090

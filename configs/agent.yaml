@@ -1,0 +1,5 @@
+interval: 15s
+kafka_brokers:
+  - localhost:9092
+kafka_topic: metrics
+log_level: info
