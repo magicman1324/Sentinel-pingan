@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - name: vet
+        run: cd agent && go vet ./...
+      - name: test
+        run: cd agent && go test -race -cover ./...
+      - name: build
+        run: cd agent && GOOS=linux go build -ldflags="-s -w" -pgo=auto -o bin/monitor-agent ./cmd/agent/
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - name: vet
+        run: cd backend && go vet ./...
+      - name: test
+        run: cd backend && go test -race -short ./...
+      - name: build
+        run: cd backend && GOOS=linux go build -ldflags="-s -w" -o bin/monitor-backend ./cmd/server/
+
+  flink:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: "17", distribution: "temurin" }
+      - name: build
+        run: cd flink-job && mvn -B package -DskipTests
+
+  docker:
+    needs: [agent, backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & push Agent
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/agent:latest -f agent/Dockerfile agent/
+      - name: Build & push Backend
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/backend:latest -f backend/Dockerfile backend/
+      - name: Build & push Dashboard
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}/dashboard:latest dashboard/

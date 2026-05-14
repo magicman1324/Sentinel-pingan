@@ -1,0 +1,50 @@
+# Default values for sentinel
+# environments: dev / staging / prod
+
+environment: dev
+
+agent:
+  image: ghcr.io/magicman1324/sentinel-pingan/agent:latest
+  interval: 15s
+  kafkaBrokers: "kafka:9092"
+  kafkaTopic: metrics
+  resources:
+    requests: { cpu: 50m, memory: 20Mi }
+    limits:   { cpu: 100m, memory: 30Mi }
+
+backend:
+  image: ghcr.io/magicman1324/sentinel-pingan/backend:latest
+  replicas: 2
+  tidbDsn: "root:@tcp(tidb:4000)/monitor?parseTime=true"
+  redisAddr: "redis:6379"
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+dashboard:
+  image: ghcr.io/magicman1324/sentinel-pingan/dashboard:latest
+  replicas: 1
+
+flink:
+  image: flink:1.20-java17
+  jobManagerReplicas: 1
+  taskManagerReplicas: 2
+  taskManagerHeapMb: 15360
+  taskManagerSlots: 16
+
+kafka:
+  enabled: true
+  replicas: 1
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+
+tidb:
+  enabled: true
+  image: pingcap/tidb:v8.5.0
+
+alertmanager:
+  enabled: true
+  replicas: 3
+  image: prom/alertmanager:v0.27.0

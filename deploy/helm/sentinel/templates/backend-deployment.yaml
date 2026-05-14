@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-backend
+  labels: { app: sentinel-backend }
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels: { app: sentinel-backend }
+  template:
+    metadata:
+      labels: { app: sentinel-backend }
+    spec:
+      containers:
+      - name: backend
+        image: {{ .Values.backend.image }}
+        ports:
+        - containerPort: 8080
+          name: rest
+        - containerPort: 9090
+          name: grpc
+        env:
+        - name: TIDB_DSN
+          value: {{ .Values.backend.tidbDsn | quote }}
+        - name: REDIS_ADDR
+          value: {{ .Values.backend.redisAddr | quote }}
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 10
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-backend
+spec:
+  selector: { app: sentinel-backend }
+  ports:
+  - name: rest
+    port: 8080
+    targetPort: 8080
+  - name: grpc
+    port: 9090
+    targetPort: 9090

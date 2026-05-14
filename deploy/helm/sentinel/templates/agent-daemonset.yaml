@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sentinel-agent
+  labels: { app: sentinel-agent }
+spec:
+  selector:
+    matchLabels: { app: sentinel-agent }
+  template:
+    metadata:
+      labels: { app: sentinel-agent }
+    spec:
+      hostNetwork: true
+      containers:
+      - name: agent
+        image: {{ .Values.agent.image }}
+        env:
+        - name: KAFKA_BROKERS
+          value: {{ .Values.agent.kafkaBrokers | quote }}
+        - name: KAFKA_TOPIC
+          value: {{ .Values.agent.kafkaTopic | quote }}
+        - name: AGENT_INTERVAL
+          value: {{ .Values.agent.interval | quote }}
+        resources:
+          {{- toYaml .Values.agent.resources | nindent 10 }}
