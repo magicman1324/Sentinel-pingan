@@ -1,22 +1,31 @@
 package rest
 
 import (
+	"database/sql"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pingan/monitor-backend/internal/service"
+	"github.com/redis/go-redis/v9"
 )
 
-func RegisterRoutes(r *gin.Engine, svc *service.Service) {
-	h := &handler{svc: svc}
+func RegisterRoutes(r *gin.Engine, svc *service.Service, db *sql.DB, rdb *redis.Client) {
+	h := &handler{svc: svc, db: db, rdb: rdb}
 
 	api := r.Group("/api/v1")
 	{
-		api.GET("/rules", h.ListRules)
-		api.POST("/rules", h.CreateRule)
-		api.PUT("/rules/:id", h.UpdateRule)
-		api.DELETE("/rules/:id", h.DeleteRule)
+		rules := api.Group("/rules")
+		{
+			rules.GET("", h.ListRules)
+			rules.POST("", ValidateRule(), h.CreateRule)
+			rules.PUT("/:id", ValidateRule(), h.UpdateRule)
+			rules.DELETE("/:id", h.DeleteRule)
+		}
 
-		api.GET("/alerts", h.ListAlerts)
-		api.POST("/alerts/:id/resolve", h.ResolveAlert)
+		alerts := api.Group("/alerts")
+		{
+			alerts.GET("", h.ListAlerts)
+			alerts.POST("/:id/resolve", h.ResolveAlert)
+		}
 
 		api.GET("/health", h.Health)
 	}

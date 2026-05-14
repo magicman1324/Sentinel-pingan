@@ -48,6 +48,18 @@ CREATE TABLE IF NOT EXISTS channels (
     created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Audit log table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    action      ENUM('create','update','delete') NOT NULL,
+    resource    VARCHAR(64) NOT NULL COMMENT 'e.g. rules, alerts',
+    resource_id BIGINT NOT NULL DEFAULT 0,
+    detail      TEXT,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_resource (resource, resource_id),
+    INDEX idx_created_at (created_at)
+);
+
 -- Relation table: rule <-> channel
 CREATE TABLE IF NOT EXISTS rule_channels (
     rule_id    BIGINT NOT NULL,

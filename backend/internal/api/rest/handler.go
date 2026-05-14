@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"strconv"
@@ -8,10 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pingan/monitor-backend/internal/model"
 	"github.com/pingan/monitor-backend/internal/service"
+	"github.com/redis/go-redis/v9"
 )
 
 type handler struct {
 	svc *service.Service
+	rdb *redis.Client
+	db  *sql.DB
 }
 
 func (h *handler) ListRules(c *gin.Context) {
@@ -27,10 +31,6 @@ func (h *handler) CreateRule(c *gin.Context) {
 	var rule model.Rule
 	if err := c.ShouldBindJSON(&rule); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if rule.Name == "" || rule.Metric == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name and metric are required"})
 		return
 	}
 	if err := h.svc.CreateRule(c.Request.Context(), &rule); err != nil {
@@ -84,7 +84,13 @@ func (h *handler) ListAlerts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, alerts)
+	total, _ := h.svc.GetAlertCount(c.Request.Context())
+	c.JSON(http.StatusOK, gin.H{
+		"data":  alerts,
+		"total": total,
+		"page":  page,
+		"size":  size,
+	})
 }
 
 func (h *handler) ResolveAlert(c *gin.Context) {
@@ -101,5 +107,26 @@ func (h *handler) ResolveAlert(c *gin.Context) {
 }
 
 func (h *handler) Health(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	status := "ok"
+	dbStatus := "ok"
+	redisStatus := "ok"
+
+	if h.db != nil {
+		if err := h.db.Ping(); err != nil {
+			dbStatus = "error"
+			status = "degraded"
+		}
+	}
+	if h.rdb != nil {
+		if err := h.rdb.Ping(c.Request.Context()).Err(); err != nil {
+			redisStatus = "error"
+			status = "degraded"
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": status,
+		"tidb":   dbStatus,
+		"redis":  redisStatus,
+	})
 }
