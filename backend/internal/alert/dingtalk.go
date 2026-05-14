@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pingan/monitor-backend/internal/model"
 )
 
 // DingTalkCard renders a Markdown alert card and POSTs to the webhook URL.
@@ -31,8 +30,8 @@ type dingtalkMessage struct {
 	} `json:"markdown"`
 }
 
-func (c *DingTalkCard) Send(alert *model.Alert, rule *model.Rule) error {
-	title := fmt.Sprintf("🔴 %s — %s", alert.Severity, alert.Hostname)
+func (c *DingTalkCard) Send(hostname, severity, metric, message string, value, threshold float64, alertID int64) error {
+	title := fmt.Sprintf("%s — %s", severity, hostname)
 
 	text := fmt.Sprintf(`### %s
 
@@ -45,16 +44,16 @@ func (c *DingTalkCard) Send(alert *model.Alert, rule *model.Rule) error {
 | **规则** | %s |
 | **时间** | %s |
 
-> [📊 查看Dashboard](%s) | [🔧 一键处理](%s)`,
+> [ 查看Dashboard](%s) | [ 一键处理](%s)`,
 		title,
-		alert.Hostname,
-		alert.Metric,
-		alert.Value,
-		alert.Threshold,
-		alert.Message,
-		alert.CreatedAt.Format("15:04:05"),
+		hostname,
+		metric,
+		value,
+		threshold,
+		message,
+		time.Now().Format("15:04:05"),
 		"https://monitor.pingan.com/dashboard",
-		"https://monitor.pingan.com/ack/"+fmt.Sprintf("%d", alert.ID),
+		"https://monitor.pingan.com/ack/"+fmt.Sprintf("%d", alertID),
 	)
 
 	msg := dingtalkMessage{MsgType: "markdown"}

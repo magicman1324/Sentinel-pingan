@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"sync"
 
 	"github.com/pingan/monitor-backend/internal/model"
@@ -79,10 +78,7 @@ func (s *Service) publishRuleUpdate(ctx context.Context) error {
 	pipe.Set(ctx, "monitor:rules", data, 0)
 	pipe.Publish(ctx, "monitor:rule-updated", "1")
 	_, err = pipe.Exec(ctx)
-	if err != nil {
-		log.Printf("[service] redis pub/sub: %v", err)
-	}
-	return nil
+	return err
 }
 
 func (s *Service) SyncEnabledRulesToRedis(ctx context.Context) error {
