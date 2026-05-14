@@ -15,6 +15,11 @@ Thumbs.db
 # Maven
 flink-job/target/
 
+# Node
+node_modules/
+dashboard/dist/
+
 # Environment
 .env
-.env.local
+.claude/
+go.work.sum
