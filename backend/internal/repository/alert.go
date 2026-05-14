@@ -15,8 +15,15 @@ func NewAlertRepository(db *sqlx.DB) *AlertRepository {
 
 func (r *AlertRepository) List(limit, offset int) ([]model.Alert, error) {
 	var alerts []model.Alert
-	err := r.db.Select(&alerts, "SELECT * FROM alerts ORDER BY created_at DESC LIMIT ? OFFSET ?", limit, offset)
+	err := r.db.Select(&alerts,
+		"SELECT * FROM alerts ORDER BY created_at DESC LIMIT ? OFFSET ?", limit, offset)
 	return alerts, err
+}
+
+func (r *AlertRepository) Count() (int64, error) {
+	var n int64
+	err := r.db.Get(&n, "SELECT COUNT(*) FROM alerts")
+	return n, err
 }
 
 func (r *AlertRepository) Create(alert *model.Alert) error {
@@ -34,6 +41,7 @@ func (r *AlertRepository) Create(alert *model.Alert) error {
 }
 
 func (r *AlertRepository) Resolve(id int64) error {
-	_, err := r.db.Exec("UPDATE alerts SET status='resolved', resolved_at=NOW() WHERE id=?", id)
+	_, err := r.db.Exec(
+		"UPDATE alerts SET status='resolved', resolved_at=NOW() WHERE id=?", id)
 	return err
 }

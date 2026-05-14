@@ -40,13 +40,15 @@ func main() {
 	alertRepo := repository.NewAlertRepository(db)
 	svc := service.NewService(ruleRepo, alertRepo, rdb)
 
-	// Preload rules into Redis on startup
+	// Preload rules cache
 	if err := svc.SyncEnabledRulesToRedis(context.Background()); err != nil {
 		log.Printf("redis preload: %v", err)
 	}
 
+	// REST
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
+	router.Use(gin.Recovery())
 	rest.RegisterRoutes(router, svc)
 
 	httpSrv := &http.Server{
@@ -57,30 +59,27 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// gRPC
 	grpcSrv := grpc.NewServer()
 	lis, err := net.Listen("tcp", ":9090")
 	if err != nil {
 		log.Fatalf("grpc listen: %v", err)
 	}
 
-	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() { log.Printf("rest: %v", httpSrv.ListenAndServe()) }()
 	go func() { log.Printf("grpc: %v", grpcSrv.Serve(lis)) }()
 
-	log.Println("[backend] started :8080 (REST) :9090 (gRPC)")
+	log.Println("[backend] :8080 (REST) :9090 (gRPC)")
 
 	<-quit
 	log.Println("shutting down...")
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer shutdownCancel()
-
-	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
-		log.Printf("http shutdown: %v", err)
-	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	httpSrv.Shutdown(shutdownCtx)
 	grpcSrv.GracefulStop()
 	log.Println("[backend] stopped")
 }

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package monitor.v1;
+
+option go_package = "github.com/pingan/monitor-backend/api/proto/monitor/v1;monitorv1";
+
+// RuleService manages alerting rules.
+service RuleService {
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse);
+  rpc GetRule(GetRuleRequest) returns (Rule);
+  rpc CreateRule(CreateRuleRequest) returns (Rule);
+  rpc UpdateRule(UpdateRuleRequest) returns (Rule);
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse);
+}
+
+// AlertService manages alert history.
+service AlertService {
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+  rpc ResolveAlert(ResolveAlertRequest) returns (Alert);
+}
+
+// --- Rule messages ---
+
+message Rule {
+  int64  id          = 1;
+  string name        = 2;
+  string description = 3;
+  string rule_type   = 4;  // "atomic" | "composite"
+  string metric      = 5;
+  string operator    = 6;  // >, >=, <, <=, ==, !=
+  double threshold   = 7;
+  int32  duration_sec = 8;
+  string severity    = 9;  // "critical" | "warning" | "info"
+  string expression  = 10;
+  bool   enabled     = 11;
+  repeated string channel_ids = 12;
+  int64  created_at  = 13;
+  int64  updated_at  = 14;
+}
+
+message ListRulesRequest {}
+message ListRulesResponse {
+  repeated Rule rules = 1;
+}
+
+message GetRuleRequest    { int64 id = 1; }
+message CreateRuleRequest { Rule rule = 1; }
+message UpdateRuleRequest { int64 id = 1; Rule rule = 2; }
+message DeleteRuleRequest { int64 id = 1; }
+message DeleteRuleResponse {}
+
+// --- Alert messages ---
+message Alert {
+  int64  id          = 1;
+  int64  rule_id     = 2;
+  string hostname    = 3;
+  string severity    = 4;
+  string metric      = 5;
+  double value       = 6;
+  double threshold   = 7;
+  string message     = 8;
+  string status      = 9;
+  int64  created_at  = 10;
+  int64  resolved_at = 11;
+}
+
+message ListAlertsRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message ListAlertsResponse {
+  repeated Alert alerts = 1;
+  int32 total           = 2;
+}
+
+message ResolveAlertRequest { int64 id = 1; }
