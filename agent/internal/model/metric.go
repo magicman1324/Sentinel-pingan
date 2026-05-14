@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// ---- canonical metric types ----
-
 type CPUStats struct {
 	PercentUsed float64 `json:"percent_used"`
 	CoreCount   int     `json:"cores"`
@@ -36,7 +34,6 @@ type NetworkStats struct {
 	TxErrorsTotal uint64 `json:"tx_errors_total"`
 }
 
-// Metrics bundles all collected data. Filled by collectors.
 type Metrics struct {
 	CPU     *CPUStats       `json:"cpu,omitempty"`
 	Memory  *MemoryStats    `json:"memory,omitempty"`
@@ -44,13 +41,12 @@ type Metrics struct {
 	Network []NetworkStats  `json:"network,omitempty"`
 }
 
-// MetricPayload is the JSON envelope sent to Kafka.
 type MetricPayload struct {
-	Hostname  string        `json:"hostname"`
-	Timestamp int64         `json:"ts"`
-	CPU       *CPUStats     `json:"cpu,omitempty"`
-	Memory    *MemoryStats  `json:"memory,omitempty"`
-	Disk      []DiskStats   `json:"disk,omitempty"`
+	Hostname  string         `json:"hostname"`
+	Timestamp int64          `json:"ts"`
+	CPU       *CPUStats      `json:"cpu,omitempty"`
+	Memory    *MemoryStats   `json:"memory,omitempty"`
+	Disk      []DiskStats    `json:"disk,omitempty"`
 	Network   []NetworkStats `json:"network,omitempty"`
 }
 

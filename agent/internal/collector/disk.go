@@ -2,32 +2,60 @@ package collector
 
 import (
 	"context"
+	"strings"
+	"syscall"
 
+	"github.com/pingan/monitor-agent/internal/cgroup"
 	"github.com/pingan/monitor-agent/internal/model"
-	"github.com/shirou/gopsutil/v4/disk"
 )
 
-type DiskCollector struct{}
+type DiskCollector struct {
+	paths cgroup.Paths
+}
 
-func NewDiskCollector() *DiskCollector { return &DiskCollector{} }
-
+func NewDiskCollector() *DiskCollector {
+	return &DiskCollector{paths: cgroup.Detect()}
+}
 func (c *DiskCollector) Name() string { return "disk" }
 
-func (c *DiskCollector) Collect(ctx context.Context, out *Metrics) {
-	parts, err := disk.PartitionsWithContext(ctx, false)
+func (c *DiskCollector) Collect(_ context.Context, out *model.Metrics) {
+	mounts, err := c.paths.ProcFile("mounts")
 	if err != nil {
 		return
 	}
-	for _, p := range parts {
-		u, err := disk.UsageWithContext(ctx, p.Mountpoint)
-		if err != nil {
+	for _, line := range strings.Split(mounts, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 3 {
 			continue
 		}
+		dev := fields[0]
+		mp := fields[1]
+		fs := fields[2]
+		// Skip virtual / pseudo filesystems
+		if !strings.HasPrefix(dev, "/dev/") {
+			continue
+		}
+		switch fs {
+		case "ext4", "xfs", "btrfs", "ext3", "ext2", "zfs", "ntfs", "vfat":
+		default:
+			continue
+		}
+		var stat syscall.Statfs_t
+		if err := syscall.Statfs(mp, &stat); err != nil {
+			continue
+		}
+		total := stat.Blocks * uint64(stat.Bsize)
+		avail := stat.Bavail * uint64(stat.Bsize)
+		used := total - avail
+		var pct float64
+		if total > 0 {
+			pct = float64(used) / float64(total) * 100
+		}
 		out.Disk = append(out.Disk, model.DiskStats{
-			MountPoint:  p.Mountpoint,
-			TotalBytes:  u.Total,
-			UsedBytes:   u.Used,
-			PercentUsed: u.UsedPercent,
+			MountPoint:  mp,
+			TotalBytes:  total,
+			UsedBytes:   used,
+			PercentUsed: pct,
 		})
 	}
 }
